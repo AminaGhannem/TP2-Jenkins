@@ -14,11 +14,13 @@ pipeline {
   }
 
   stages {
-    stage('Checkout') {
-      steps {
-        git 'https://github.com/AminaGhannem/TP2-Jenkins.git'
-      }
-    }
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+                sh 'git --version'
+                echo "Code checked out from ${env.GIT_URL}"
+            }
+        }
 
     stage('Build with Maven') {
         steps {
