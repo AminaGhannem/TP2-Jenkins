@@ -1,19 +1,19 @@
 pipeline {
-  agent any
+    agent any
 
-  environment {
-    DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds-id') 
-    DOCKER_IMAGE = "aminaghannem/test-java-app"
-    VERSION = "${env.BUILD_NUMBER}"
-    BUILD_DATE = new Date().format('yyyyMMdd-HHmmss')
-  }
+    tools {
+        maven 'M3'
+        jdk 'JDK8'
+    }
 
-  tools {
-    maven 'M3' 
-    jdk 'JDK8'
-  }
+    environment {
+        DOCKER_HUB = credentials('dockerhub-creds-id')
+        IMAGE_NAME = 'aminaghannem/test-java-app'
+        VERSION = "${env.BUILD_NUMBER}"
+        BUILD_DATE = new Date().format('yyyyMMdd-HHmmss')
+    }
 
-  stages {
+    stages {
         stage('Checkout Code') {
             steps {
                 checkout scm
@@ -22,55 +22,76 @@ pipeline {
             }
         }
 
-    stage('Build with Maven') {
-        steps {
-            script {
-                try {
-                    sh 'mvn --version'
-                    sh 'mvn clean package -DskipTests'
-                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
-                } catch (e) {
-                    echo "Build failed: ${e}"
-                    currentBuild.result = 'FAILURE'
-                    error('Maven build failed')
+        stage('Build with Maven') {
+            steps {
+                script {
+                    try {
+                        sh 'mvn --version'
+                        sh 'mvn clean package -DskipTests'
+                        archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                    } catch (e) {
+                        echo "Build failed: ${e}"
+                        currentBuild.result = 'FAILURE'
+                        error('Maven build failed')
+                    }
+                }
+            }
+
+            post {
+                success {
+                    echo 'Maven build completed successfully!'
+                    stash includes: 'target/*.jar', name: 'app-jar'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    try {
+                        sh 'docker --version'
+                        sh "docker build -t ${IMAGE_NAME}:${VERSION}-${BUILD_DATE} ."
+                    } catch (e) {
+                        echo "Docker build failed: ${e}"
+                        currentBuild.result = 'FAILURE'
+                        error('Docker build failed')
+                    }
+                }
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds-id', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                        sh "docker tag ${IMAGE_NAME}:${VERSION}-${BUILD_DATE} ${IMAGE_NAME}:latest"
+                        sh "docker push ${IMAGE_NAME}:${VERSION}-${BUILD_DATE}"
                 }
             }
         }
     }
 
-    stage('Test') {
-      steps {
-        sh 'mvn test'
-      }
-    }
-
-    stage('Build Docker Image') {
-      steps {
-        script {
-          def tag = "latest"
-            sh "docker build -t ${DOCKER_IMAGE}:${VERSION}-${BUILD_DATE} ."
+    post {
+        always {
+            echo 'Pipeline completed - cleaning up'
         }
-      }
-    }
-
-
-    stage('Push to Docker Hub') {
-        steps {
-            withCredentials([usernamePassword(credentialsId: 'dockerhub-creds-id', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
-                sh "docker tag ${DOCKER_IMAGE}:${VERSION}-${BUILD_DATE} ${IMAGE_NAME}:latest"
-                sh "docker push ${DOCKER_IMAGE}:${VERSION}-${BUILD_DATE}"
-            }
+        success {
+            echo 'Pipeline succeeded!'
+        }
+        failure {
+            echo 'Pipeline failed!'
         }
     }
-  }
-
-  post {
-    success {
-      echo 'Pipeline completed successfully.'
-    }
-    failure {
-      echo 'Pipeline failed.'
-    }
-  }
 }
