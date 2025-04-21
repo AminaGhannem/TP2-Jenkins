@@ -11,6 +11,8 @@ pipeline {
         IMAGE_NAME = 'aminaghannem/test-java-app'
         VERSION = "${env.BUILD_NUMBER}"
         BUILD_DATE = new Date().format('yyyyMMdd-HHmmss')
+        FULL_IMAGE = "${IMAGE_NAME}:${VERSION}-${BUILD_DATE}"
+        HELM_CHART_PATH = './mon-app'  
     }
 
     stages {
@@ -36,7 +38,6 @@ pipeline {
                     }
                 }
             }
-
             post {
                 success {
                     echo 'Maven build completed successfully!'
@@ -49,7 +50,6 @@ pipeline {
             steps {
                 sh 'mvn test'
             }
-
             post {
                 always {
                     junit 'target/surefire-reports/*.xml'
@@ -62,7 +62,7 @@ pipeline {
                 script {
                     try {
                         sh 'docker --version'
-                        sh "docker build -t ${IMAGE_NAME}:${VERSION}-${BUILD_DATE} ."
+                        sh "docker build -t ${FULL_IMAGE} ."
                     } catch (e) {
                         echo "Docker build failed: ${e}"
                         currentBuild.result = 'FAILURE'
@@ -75,9 +75,19 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds-id', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                        sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
-                        sh "docker tag ${IMAGE_NAME}:${VERSION}-${BUILD_DATE} ${IMAGE_NAME}:latest"
-                        sh "docker push ${IMAGE_NAME}:${VERSION}-${BUILD_DATE}"
+                    sh "echo ${DOCKER_PASSWORD} | docker login -u ${DOCKER_USERNAME} --password-stdin"
+                    sh "docker tag ${FULL_IMAGE} ${IMAGE_NAME}:latest"
+                    sh "docker push ${FULL_IMAGE}"
+                    sh "docker push ${IMAGE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Deploy with Helm') {
+            steps {
+                script {
+                    sh "helm version"
+                    sh "helm upgrade --install mon-app ${HELM_CHART_PATH} --set image.repository=${IMAGE_NAME} --set image.tag=${VERSION}-${BUILD_DATE}"
                 }
             }
         }
