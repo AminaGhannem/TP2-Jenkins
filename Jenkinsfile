@@ -14,7 +14,7 @@ pipeline {
         FULL_IMAGE = "${IMAGE_NAME}:${VERSION}-${BUILD_DATE}"
         HELM_CHART_PATH = './mon-app'  
         PATH = "${env.WORKSPACE}/kubectl-bin:${env.PATH}"
-        KUBECONFIG = '/var/jenkins_home/.kube/config'
+        KUBECONFIG='/root/.kube/config'
     }
 
     stages {
@@ -85,17 +85,25 @@ pipeline {
             }
         }
 
-        stage('Install kubectl') {
-            steps {
-                sh '''
-                    mkdir -p kubectl-bin
-                    curl -Lo kubectl https://dl.k8s.io/release/v1.30.2/bin/linux/amd64/kubectl
-                    chmod +x kubectl
-                    mv kubectl kubectl-bin/
-                '''
+        // stage('Install kubectl') {
+        //     steps {
+        //         sh '''
+        //             mkdir -p kubectl-bin
+        //             curl -Lo kubectl https://dl.k8s.io/release/v1.30.2/bin/linux/amd64/kubectl
+        //             chmod +x kubectl
+        //             mv kubectl kubectl-bin/
+        //         '''
+        //     }
+        // }
+
+        stages {
+            stage('Test kubectl config') {
+                steps {
+                    sh 'kubectl config view'
+                }
             }
         }
-
+        
         stage('Check kubectl Version') {
             steps {
                 sh 'kubectl version --client'
