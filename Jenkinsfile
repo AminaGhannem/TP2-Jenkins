@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        docker { image 'lachlanevenson/k8s-kubectl:v1.23.7' }
-    }
+    agent any
 
     tools {
         maven 'M3'
@@ -82,6 +80,17 @@ pipeline {
                     sh "docker push ${FULL_IMAGE}"
                     sh "docker push ${IMAGE_NAME}:latest"
                 }
+            }
+        }
+
+        stage('Install kubectl') {
+            steps {
+                sh '''
+                    mkdir -p kubectl-bin
+                    curl -Lo kubectl https://dl.k8s.io/release/v1.30.2/bin/linux/amd64/kubectl
+                    chmod +x kubectl
+                    mv kubectl kubectl-bin/
+                '''
             }
         }
 
