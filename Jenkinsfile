@@ -13,6 +13,7 @@ pipeline {
         BUILD_DATE = new Date().format('yyyyMMdd-HHmmss')
         FULL_IMAGE = "${IMAGE_NAME}:${VERSION}-${BUILD_DATE}"
         HELM_CHART_PATH = './mon-app'  
+        PATH = "${env.WORKSPACE}/kubectl-bin:${env.PATH}"
     }
 
     stages {
