@@ -83,16 +83,6 @@ pipeline {
             }
         }
 
-        stage('Install kubectl') {
-            steps {
-                sh 'curl -LO https://dl.k8s.io/release/v1.30.2/bin/linux/amd64/kubectl'
-                sh 'chmod +x ./kubectl'
-                sh 'mkdir -p /home/jenkins/bin'  // Make sure the directory exists
-                sh 'mv ./kubectl /home/jenkins/bin/kubectl'
-                sh 'export PATH=$PATH:/home/jenkins/bin'  // Add to PATH
-            }
-        }
-
         stage('Check kubectl Version') {
             steps {
                 sh 'kubectl version --client'
