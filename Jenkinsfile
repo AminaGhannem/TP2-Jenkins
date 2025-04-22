@@ -14,7 +14,7 @@ pipeline {
         FULL_IMAGE = "${IMAGE_NAME}:${VERSION}-${BUILD_DATE}"
         HELM_CHART_PATH = './mon-app'  
         PATH = "${env.WORKSPACE}/kubectl-bin:${env.PATH}"
-        KUBECONFIG = '/root/.kube/config'
+        KUBECONFIG = '/var/jenkins_home/.kube/config'
     }
 
     stages {
