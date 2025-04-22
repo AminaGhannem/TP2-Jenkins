@@ -1,5 +1,7 @@
 pipeline {
-    agent any
+    agent {
+        docker { image 'lachlanevenson/k8s-kubectl:v1.23.7' }
+    }
 
     tools {
         maven 'M3'
