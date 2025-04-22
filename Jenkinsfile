@@ -99,8 +99,6 @@ pipeline {
         stage('Check kubectl Version') {
             steps {
                 sh 'kubectl version --client'
-                sh 'kubectl cluster-info'
-                sh 'kubectl get ns'
             }
         }
 
