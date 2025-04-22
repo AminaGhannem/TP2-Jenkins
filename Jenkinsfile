@@ -96,14 +96,14 @@ pipeline {
         //     }
         // }
 
-        stages {
-            stage('Test kubectl config') {
-                steps {
-                    sh 'kubectl config view'
-                }
+   
+        stage('Test kubectl config') {
+            steps {
+                sh 'kubectl config view'
             }
         }
-        
+    
+
         stage('Check kubectl Version') {
             steps {
                 sh 'kubectl version --client'
