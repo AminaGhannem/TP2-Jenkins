@@ -14,6 +14,7 @@ pipeline {
         FULL_IMAGE = "${IMAGE_NAME}:${VERSION}-${BUILD_DATE}"
         HELM_CHART_PATH = './mon-app'  
         PATH = "${env.WORKSPACE}/kubectl-bin:${env.PATH}"
+        KUBECONFIG = '/root/.kube/config'
     }
 
     stages {
@@ -98,6 +99,8 @@ pipeline {
         stage('Check kubectl Version') {
             steps {
                 sh 'kubectl version --client'
+                sh 'kubectl cluster-info'
+                sh 'kubectl get ns'
             }
         }
 
